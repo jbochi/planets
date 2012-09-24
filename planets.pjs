@@ -1,0 +1,96 @@
+var simulation = function() {}
+
+simulation.prototype = {
+    G: 10000,
+    PATH_MAX_POINTS: 100,
+	init: function(planets, center) {
+        this.planets = [];
+        this.center = center;
+        for (var i = 0 in planets) {
+            var planet = {
+                mass: planets[i].mass,
+                position: new Point(planets[i].x, planets[i].y),
+                velocity: new Point(planets[i].velX, planets[i].velY),
+                color: planets[i].color
+            };
+            this.planets.push(planet);
+        }
+        this.draw();
+	},
+    draw: function() {
+        for (i in this.planets) {
+            var planet = this.planets[i];
+            var radius = Math.max(Math.min(Math.pow(planet.mass, 1 / 3), 5), 2);
+            planet.circle = new Path.Circle(this.paperCoordinates(planet.position), radius);
+            planet.circle.strokeColor = planet.color;
+            planet.circle.fillColor = planet.color;
+
+            planet.path = new Path();
+            planet.path.strokeColor = planet.color;
+            planet.path.add(new Point(this.paperCoordinates(planet.position)));
+        }
+    },
+    updateVelocities: function(dt) {
+        for (var i in this.planets) {
+            for (var j = 0; j < i; j++) {
+                var d = this.planets[j].position - this.planets[i].position;
+                var r2 = Math.pow(d.length, 2);
+
+                var f = d.normalize() * this.G * this.planets[i].mass * this.planets[j].mass / r2;
+
+                this.planets[i].velocity += f / this.planets[i].mass * dt;
+                this.planets[j].velocity -= f / this.planets[j].mass * dt;
+            }
+        }
+    },
+    updatePosition: function(planet, dt) {
+        planet.position += planet.velocity * dt;
+        planet.circle.position = this.paperCoordinates(planet.position);
+        planet.path.add(this.paperCoordinates(planet.position));
+        if (planet.path.segments.length > this.PATH_MAX_POINTS) {
+            planet.path.removeSegments(0, 1);
+        }
+    },
+    paperCoordinates: function(point) {
+        if (this.center === undefined) {
+            return view.center - point;
+        } else {
+            return view.center - this.planets[this.center].position + point;
+        }
+    },
+    onFrame: function(event) {
+        this.updateVelocities(event.delta);
+        for (var i in this.planets) {
+            this.updatePosition(this.planets[i], event.delta);
+        }
+    }
+}
+
+var planets = {
+    sun_planet_moon: [
+        {mass: 200, x: 0, y: 0, velX: 0, velY: 0, color: "#ccc"},
+    	{mass: 10, x: 160, y: 0, velX: 0, velY: 120, color: "#cc0"},
+    	{mass: 0.001, x: 140, y: 0, velX: 0, velY: 53, color: "#c00"}
+	],
+
+	four_star_ballet: [
+        {mass: 120, x: -100, y: 100, velX: -50, velY: -50, color: "#ccc"},
+    	{mass: 120, x: 100, y: 100, velX: -50, velY: 50, color: "#cc0"},
+    	{mass: 120, x: 100, y: -100, velX: 50, velY: 50, color: "#c00"},
+		{mass: 120, x: -100, y: -100, velX: 50, velY: -50, color: "#0cc"}
+    ],
+
+    double_double: [
+        {mass: 60, x: -115, y: -3, velX: 0, velY: -155, color: "#ccc"},
+        {mass: 70, x: 102, y: 0, velX: 1, velY: 150, color: "#cc0"},
+        {mass: 55, x: -77, y: -2, velX: -1, velY: 42, color: "#c00"},
+        {mass: 62, x: 135, y: 0, velX: -1, velY: -52, color: "#0cc"}
+    ]
+}
+
+var sim = new simulation();
+sim.init(planets.sun_planet_moon, 0);
+
+function onFrame(event) {
+    sim.onFrame(event);
+}
