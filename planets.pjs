@@ -4,10 +4,27 @@ simulation.prototype = {
     G: 10000,
     PATH_MAX_POINTS: 100,
     MAX_DELTA: 0.05,
-	init: function(planets, center) {
-        this.planets = [];
+    init: function(systems, center) {
         this.center = center;
-        for (var i = 0 in planets) {
+        this.systems = systems;
+        this.addOptions();
+        this.initializePlanets();
+    },
+    addOptions: function(systems) {
+        this.select = document.getElementById("system");
+        var self = this;
+        this.select.addEventListener('change', function() {
+            self.initializePlanets();
+        }, false);
+        for(var system in this.systems) {
+            this.select.options[this.select.options.length] = new Option(system, system);
+        }
+    },
+    initializePlanets: function() {
+        this.clearPlanets();
+        this.planets = [];
+        var planets = this.systems[this.select.options[this.select.selectedIndex].value];
+        for (var i in planets) {
             var planet = {
                 mass: planets[i].mass,
                 position: new Point(planets[i].x, planets[i].y),
@@ -17,7 +34,13 @@ simulation.prototype = {
             this.planets.push(planet);
         }
         this.draw();
-	},
+    },
+    clearPlanets: function() {
+        for (var i in this.planets) {
+            this.planets[i].circle.remove();
+            this.planets[i].path.remove();
+        }
+    },
     draw: function() {
         for (i in this.planets) {
             var planet = this.planets[i];
@@ -70,18 +93,18 @@ simulation.prototype = {
 
 
 // http://phet.colorado.edu/sims/my-solar-system/my-solar-system_en.html
-var planets = {
+var systems = {
     sun_planet_moon: [
         {mass: 200, x: 0, y: 0, velX: 0, velY: 0, color: "#ccc"},
-    	{mass: 10, x: 160, y: 0, velX: 0, velY: 120, color: "#cc0"},
-    	{mass: 0.001, x: 140, y: 0, velX: 0, velY: 53, color: "#c00"}
-	],
+        {mass: 10, x: 160, y: 0, velX: 0, velY: 120, color: "#cc0"},
+        {mass: 0.001, x: 140, y: 0, velX: 0, velY: 53, color: "#c00"}
+    ],
 
-	four_star_ballet: [
+    four_star_ballet: [
         {mass: 120, x: -100, y: 100, velX: -50, velY: -50, color: "#ccc"},
-    	{mass: 120, x: 100, y: 100, velX: -50, velY: 50, color: "#cc0"},
-    	{mass: 120, x: 100, y: -100, velX: 50, velY: 50, color: "#c00"},
-		{mass: 120, x: -100, y: -100, velX: 50, velY: -50, color: "#0cc"}
+        {mass: 120, x: 100, y: 100, velX: -50, velY: 50, color: "#cc0"},
+        {mass: 120, x: 100, y: -100, velX: 50, velY: 50, color: "#c00"},
+        {mass: 120, x: -100, y: -100, velX: 50, velY: -50, color: "#0cc"}
     ],
 
     double_double: [
@@ -107,8 +130,7 @@ var planets = {
 }
 
 var sim = new simulation();
-sim.init(planets.ellipses);
-
+sim.init(systems);
 function onFrame(event) {
     sim.onFrame(event);
 }
