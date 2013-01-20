@@ -68,6 +68,8 @@ simulation.prototype = {
     }
 }
 
+
+// http://phet.colorado.edu/sims/my-solar-system/my-solar-system_en.html
 var planets = {
     sun_planet_moon: [
         {mass: 200, x: 0, y: 0, velX: 0, velY: 0, color: "#ccc"},
@@ -87,11 +89,25 @@ var planets = {
         {mass: 70, x: 102, y: 0, velX: 1, velY: 150, color: "#cc0"},
         {mass: 55, x: -77, y: -2, velX: -1, velY: 42, color: "#c00"},
         {mass: 62, x: 135, y: 0, velX: -1, velY: -52, color: "#0cc"}
+    ],
+
+    sun_planet_comet: [
+        {mass: 200, x: 0, y: 0, velX: 0, velY: 0, color: "#ccc"},
+        {mass: 1, x: 150, y: 0, velX: 0, velY: 120, color: "#cc0"},
+        {mass: 0.001, x: -220, y: 130, velX: -15, velY: -28, color: "#c00"}
+    ],
+
+    ellipses: [
+        {mass: 250, x: -200, y: 0, velX: 0, velY: 0, color: "#ccc"},
+        {mass: 0.001, x: -115, y: 0, velX: 0, velY: 151, color: "#cc0"},
+        {mass: 0.001, x: 50, y: 0, velX: 0, velY: 60, color: "#c00"},
+        {mass: 0.001, x: 220, y: 0, velX: 0, velY: 37, color: "#0cc"}
     ]
+
 }
 
 var sim = new simulation();
-sim.init(planets.sun_planet_moon, 0);
+sim.init(planets.ellipses);
 
 function onFrame(event) {
     sim.onFrame(event);
