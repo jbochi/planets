@@ -3,6 +3,7 @@ var simulation = function() {}
 simulation.prototype = {
     G: 10000,
     PATH_MAX_POINTS: 100,
+    MAX_DELTA: 0.05,
 	init: function(planets, center) {
         this.planets = [];
         this.center = center;
@@ -59,6 +60,7 @@ simulation.prototype = {
         }
     },
     onFrame: function(event) {
+        if (event.delta > this.MAX_DELTA) event.delta = this.MAX_DELTA;
         this.updateVelocities(event.delta);
         for (var i in this.planets) {
             this.updatePosition(this.planets[i], event.delta);
