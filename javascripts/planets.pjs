@@ -6,6 +6,7 @@ simulation.prototype = {
     MAX_DELTA: 0.01,
     STEPS: 200,
     init: function(systems, center) {
+        this.planets = [];
         this.center = center;
         this.systems = systems;
         this.addOptions();
