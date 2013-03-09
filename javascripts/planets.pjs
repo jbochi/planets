@@ -2,12 +2,30 @@ var simulation = function() {}
 
 simulation.prototype = {
     G: 10000,
-    PATH_MAX_POINTS: 100,
-    MAX_DELTA: 0.05,
-	init: function(planets, center) {
-        this.planets = [];
+    PATH_MAX_POINTS: 1000,
+    MAX_DELTA: 0.01,
+    STEPS: 200,
+    init: function(systems, center) {
         this.center = center;
-        for (var i = 0 in planets) {
+        this.systems = systems;
+        this.addOptions();
+        this.initializePlanets();
+    },
+    addOptions: function(systems) {
+        this.select = document.getElementById("system");
+        var self = this;
+        this.select.addEventListener('change', function() {
+            self.initializePlanets();
+        }, false);
+        for(var system in this.systems) {
+            this.select.options[this.select.options.length] = new Option(system, system);
+        }
+    },
+    initializePlanets: function() {
+        this.clearPlanets();
+        this.planets = [];
+        var planets = this.systems[this.select.options[this.select.selectedIndex].value];
+        for (var i in planets) {
             var planet = {
                 mass: planets[i].mass,
                 position: new Point(planets[i].x, planets[i].y),
@@ -17,7 +35,13 @@ simulation.prototype = {
             this.planets.push(planet);
         }
         this.draw();
-	},
+    },
+    clearPlanets: function() {
+        for (var i in this.planets) {
+            this.planets[i].circle.remove();
+            this.planets[i].path.remove();
+        }
+    },
     draw: function() {
         for (i in this.planets) {
             var planet = this.planets[i];
@@ -46,6 +70,8 @@ simulation.prototype = {
     },
     updatePosition: function(planet, dt) {
         planet.position += planet.velocity * dt;
+    },
+    updatePlanetRepresentation: function(planet) {
         planet.circle.position = this.paperCoordinates(planet.position);
         planet.path.add(this.paperCoordinates(planet.position));
         if (planet.path.segments.length > this.PATH_MAX_POINTS) {
@@ -60,28 +86,43 @@ simulation.prototype = {
         }
     },
     onFrame: function(event) {
-        if (event.delta > this.MAX_DELTA) event.delta = this.MAX_DELTA;
-        this.updateVelocities(event.delta);
+        // TODO: Should use Runge-Kutta Algorithm and Dormand-Prince method
+        var delta = event.delta;
+        if (delta > this.MAX_DELTA) delta = this.MAX_DELTA;
+        delta /= this.STEPS;
+        for (var s = 0; s < this.STEPS; s++) {
+            this.updateVelocities(delta);
+            for (var i in this.planets) {
+                this.updatePosition(this.planets[i], delta);
+            }
+        }
         for (var i in this.planets) {
-            this.updatePosition(this.planets[i], event.delta);
+            this.updatePlanetRepresentation(this.planets[i]);
         }
     }
 }
 
+function three_body(p1, p2) {
+    return [
+        {mass: 100, x: -100, y: 0, velX: 100 * p1, velY: 100 * p2, color: "#ccc"},
+        {mass: 100, x: 100, y: 0, velX: 100 * p1, velY: 100 * p2, color: "#cc0"},
+        {mass: 100, x: 0, y: 0, velX: -200 * p1, velY: -200 * p2, color: "#c00"},
+    ];
+}
 
-// http://phet.colorado.edu/sims/my-solar-system/my-solar-system_en.html
-var planets = {
+var systems = {
+    // http://phet.colorado.edu/sims/my-solar-system/my-solar-system_en.html
     sun_planet_moon: [
         {mass: 200, x: 0, y: 0, velX: 0, velY: 0, color: "#ccc"},
-    	{mass: 10, x: 160, y: 0, velX: 0, velY: 120, color: "#cc0"},
-    	{mass: 0.001, x: 140, y: 0, velX: 0, velY: 53, color: "#c00"}
-	],
+        {mass: 10, x: 160, y: 0, velX: 0, velY: 120, color: "#cc0"},
+        {mass: 0.001, x: 140, y: 0, velX: 0, velY: 53, color: "#c00"}
+    ],
 
-	four_star_ballet: [
+    four_star_ballet: [
         {mass: 120, x: -100, y: 100, velX: -50, velY: -50, color: "#ccc"},
-    	{mass: 120, x: 100, y: 100, velX: -50, velY: 50, color: "#cc0"},
-    	{mass: 120, x: 100, y: -100, velX: 50, velY: 50, color: "#c00"},
-		{mass: 120, x: -100, y: -100, velX: 50, velY: -50, color: "#0cc"}
+        {mass: 120, x: 100, y: 100, velX: -50, velY: 50, color: "#cc0"},
+        {mass: 120, x: 100, y: -100, velX: 50, velY: 50, color: "#c00"},
+        {mass: 120, x: -100, y: -100, velX: 50, velY: -50, color: "#0cc"}
     ],
 
     double_double: [
@@ -102,13 +143,34 @@ var planets = {
         {mass: 0.001, x: -115, y: 0, velX: 0, velY: 151, color: "#cc0"},
         {mass: 0.001, x: 50, y: 0, velX: 0, velY: 60, color: "#c00"},
         {mass: 0.001, x: 220, y: 0, velX: 0, velY: 37, color: "#0cc"}
-    ]
+    ],
 
+    //http://suki.ipb.ac.rs/3body
+    broucke_henon: [
+        {mass: 100, x: -100, y: 0, velX: 0, velY: -93.9325, color: "#ccc"},
+        {mass: 100, x: 50, y: -64.7584, velX: -50.5328, velY: 46.96663, color: "#cc0"},
+        {mass: 100, x: 50, y: 64.7584, velX: 50.5328, velY: 46.96663, color: "c00"},
+    ],
+    figure_8: three_body(0.347111, 0.532728),
+    butterfly_1: three_body(0.306893, 0.125507),
+    butterfly_2: three_body(0.392955, 0.097579),
+    bumblebee: three_body(0.184279, 0.587188),
+    dragonfly: three_body(0.080584, 0.588836),
+    googles: three_body(0.083300, 0.127889),
+    mouth_1: three_body(0.464445, 0.396060),
+    mouth_2: three_body(0.439166, 0.452968),
+    mouth_3: three_body(0.383444, 0.377364),
+    butterfly_3: three_body(0.405916, 0.230163),
+    butterfly_4: three_body(0.350112, 0.079339),
+    yarn: three_body(0.559064, 0.349192),
+    ying_yang: three_body(0.513938, 0.304736),
+    ying_yang_1b: three_body(0.282699, 0.327209),
+    ying_yang_2a: three_body(0.416822, 0.330333),
+    ying_yang_2b: three_body(0.417343, 0.313100)
 }
 
 var sim = new simulation();
-sim.init(planets.ellipses);
-
+sim.init(systems);
 function onFrame(event) {
     sim.onFrame(event);
 }
