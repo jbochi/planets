@@ -2,9 +2,9 @@ var simulation = function() {}
 
 simulation.prototype = {
     G: 10000,
-    PATH_MAX_POINTS: 1000,
-    MAX_DELTA: 0.01,
-    STEPS: 200,
+    PATH_MAX_POINTS: 100,
+    MAX_DELTA: 0.03,
+    STEPS: 50,
     init: function(systems, center) {
         this.center = center;
         this.systems = systems;
@@ -55,21 +55,66 @@ simulation.prototype = {
             planet.path.add(new Point(this.paperCoordinates(planet.position)));
         }
     },
-    updateVelocities: function(dt) {
+    getPositions: function() {
+        var pos = new Array(this.planets.length);
+        for (var i in this.planets) {
+            pos[i] = this.planets[i].position;
+        }
+        return pos;
+    },
+    getVelocities: function() {
+        var vel = new Array(this.planets.length);
+        for (var i in this.planets) {
+            vel[i] = this.planets[i].velocity;
+        }
+        return vel;
+    },
+    calculateAcceleration: function(positions) {
+        var acc = new Array(this.planets.length);
+        for (var i in this.planets) {
+            acc[i] = new Point(0, 0);
+        }
         for (var i in this.planets) {
             for (var j = 0; j < i; j++) {
-                var d = this.planets[j].position - this.planets[i].position;
+                var d = positions[j] - positions[i];
                 var r2 = Math.pow(d.length, 2);
 
                 var f = d.normalize() * this.G * this.planets[i].mass * this.planets[j].mass / r2;
 
-                this.planets[i].velocity += f / this.planets[i].mass * dt;
-                this.planets[j].velocity -= f / this.planets[j].mass * dt;
+                acc[i] += f / this.planets[i].mass;
+                acc[j] -= f / this.planets[j].mass;
             }
         }
+        return acc;
     },
-    updatePosition: function(planet, dt) {
-        planet.position += planet.velocity * dt;
+    calculateVelocities: function(acc, dt) {
+        var vel = new Array(this.planets.length);
+        for (var i in this.planets) {
+            vel[i] = this.planets[i].velocity + acc[i] * dt;
+        }
+        return vel;
+    },
+    updateVelocities: function(vel) {
+        for (var i in this.planets) {
+            this.planets[i].velocity = vel[i];
+        }
+    },
+    calculatePositions: function(vel, dt) {
+        var pos = new Array(this.planets.length);
+        for (var i in this.planets) {
+            pos[i] = this.planets[i].position + vel[i] * dt;
+        }
+        return pos;
+    },
+    updatePositions: function(positions) {
+        for (var i in this.planets) {
+            this.planets[i].position = positions[i];
+        }
+    },
+    updateRepresentation: function() {
+        for (var i in this.planets) {
+            this.updatePlanetRepresentation(this.planets[i]);
+        }
     },
     updatePlanetRepresentation: function(planet) {
         planet.circle.position = this.paperCoordinates(planet.position);
@@ -85,20 +130,39 @@ simulation.prototype = {
             return view.center - this.planets[this.center].position + point;
         }
     },
+    simulate: function(delta) {
+        var v1 = this.getVelocities();
+        var p1 = this.getPositions();
+        var a1 = this.calculateAcceleration(p1);
+
+        var v2 = this.calculateVelocities(a1, delta / 2);
+        var p2 = this.calculatePositions(v1, delta / 2);
+        var a2 = this.calculateAcceleration(p2);
+
+        var v3 = this.calculateVelocities(a2, delta / 2);
+        var p3 = this.calculatePositions(v2, delta / 2);
+        var a3 = this.calculateAcceleration(p3);
+
+        var v4 = this.calculateVelocities(a3, delta);
+        var p4 = this.calculatePositions(v3, delta);
+        var a4 = this.calculateAcceleration(p4);
+
+        var acc = new Array(this.planets.length);
+        var vel = new Array(this.planets.length);
+        for (var i in this.planets) {
+            acc[i] = a1[i] / 6 + a2[i] / 3 + a3[i] / 3 + a4[i] / 6;
+            vel[i] = v1[i] / 6 + v2[i] / 3 + v3[i] / 3 + v4[i] / 6;
+        }
+        this.updatePositions(this.calculatePositions(vel, delta));
+        this.updateVelocities(this.calculateVelocities(acc, delta));
+    },
     onFrame: function(event) {
-        // TODO: Should use Runge-Kutta Algorithm and Dormand-Prince method
         var delta = event.delta;
         if (delta > this.MAX_DELTA) delta = this.MAX_DELTA;
-        delta /= this.STEPS;
-        for (var s = 0; s < this.STEPS; s++) {
-            this.updateVelocities(delta);
-            for (var i in this.planets) {
-                this.updatePosition(this.planets[i], delta);
-            }
+        for (var i = 0; i < this.STEPS; i++) {
+            this.simulate(delta/this.STEPS);
         }
-        for (var i in this.planets) {
-            this.updatePlanetRepresentation(this.planets[i]);
-        }
+        this.updateRepresentation();
     }
 }
 
